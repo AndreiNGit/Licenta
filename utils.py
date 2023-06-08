@@ -7,14 +7,19 @@ from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
 import time
 
-def download_technical_data(symbol):
+def download_technical_data(symbol, signal):
+    print(f'Se descarca indicatorul {signal} pentru actiunea {symbol}')
     ti = TechIndicators(key='Z3QM56MJPC8SYUT7', output_format='pandas')
-    data, _ = ti.get_sma(symbol=symbol, interval='daily', time_period=30)
+    if signal == "ema9":
+        data, _ = ti.get_ema(symbol=symbol, interval='daily', time_period=9)
+    else:
+        data, _ = ti.get_ema(symbol=symbol, interval='daily', time_period=21)
+    data.columns = [signal]
     return data
 
 def download_economic_data(function, interval = ""):
+    print(f'Se descarca datele pentru {function}...')
     # Obține datele JSON de la Alpha Vantage API
-    url = ""
     if interval == "":
         url = f'https://www.alphavantage.co/query?function={function}&apikey=Z3QM56MJPC8SYUT7'
     else:
@@ -29,7 +34,6 @@ def download_economic_data(function, interval = ""):
     
     # Setează coloana 'date' ca index și setează frecvența la anual
     df_gdp.set_index('date', inplace=True)
-    print(df_gdp)
     return df_gdp
 
 def concat_df(df1, df2, period = 'M'):
@@ -46,19 +50,20 @@ def concat_df(df1, df2, period = 'M'):
 
 # download open, high, low, close, volume data from api, outputsize = full (all data range)
 def download_stock_df(stock_name) -> DataFrame:
+    print('Se descarca datele legate de stock...')
     ts = TimeSeries(key='Z3QM56MJPC8SYUT7', output_format='pandas', indexing_type='date')
     stock_data_df, _ = ts.get_daily_adjusted(stock_name, outputsize='full')
     stock_data_df.drop(['5. adjusted close', '7. dividend amount', '8. split coefficient'], axis=1, inplace=True)
     stock_data_df.columns = ["open", "high", "low", "close", "volume"]
     stock_data_df = concat_df(stock_data_df, download_economic_data("REAL_GDP", "quarterly"))
-    stock_data_df = concat_df(stock_data_df, download_economic_data("CPI", "monthly"))
-    stock_data_df = concat_df(stock_data_df, download_economic_data("INFLATION"))
-    stock_data_df = concat_df(stock_data_df, download_economic_data("UNEMPLOYMENT"))
-    print("Sleeping for 70 seconds for API call limit")
-    time.sleep(70)
-    stock_data_df = concat_df(stock_data_df, download_economic_data("FEDERAL_FUNDS_RATE", "monthly"))
-    stock_data_df = concat_df(stock_data_df, download_technical_data(stock_name), "D")
-    stock_data_df = concat_df(stock_data_df, download_technical_data(stock_name), "D")
+    # stock_data_df = concat_df(stock_data_df, download_economic_data("CPI", "monthly"))
+    # stock_data_df = concat_df(stock_data_df, download_economic_data("INFLATION"))
+    # stock_data_df = concat_df(stock_data_df, download_economic_data("UNEMPLOYMENT"))
+    # print("Sleeping for 70 seconds for API call limit")
+    # time.sleep(70)
+    # stock_data_df = concat_df(stock_data_df, download_economic_data("FEDERAL_FUNDS_RATE", "monthly"))
+    stock_data_df = concat_df(stock_data_df, download_technical_data(stock_name, "ema9"), "D")
+    stock_data_df = concat_df(stock_data_df, download_technical_data(stock_name, "ema21"), "D")
     stock_data_df.dropna(inplace=True)
     return stock_data_df.iloc[::-1]
 
@@ -66,7 +71,7 @@ def download_stock_df(stock_name) -> DataFrame:
 # Filtreaza si scaleaza datele
 def prepare_data(df: DataFrame):
     # Ce features vrem sa luam din dataset
-    features = ['open', 'high', 'low', 'close', 'volume'] #, 'real_gdp', 'cpi', 'inflation', 'unemployment']
+    features = [col for col in df.columns]
 
     # Extragem doar colanele din lista noastra
     df_filter = df[features]
