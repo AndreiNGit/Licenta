@@ -1,5 +1,4 @@
 import math
-
 import numpy as np
 import pandas as pd
 from alpha_vantage.timeseries import TimeSeries
@@ -10,12 +9,15 @@ from tensorflow import keras
 import tensorflow as tf
 import seaborn as sns
 from utils import download_stock_df, prepare_data, partition_dataset
+import joblib
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
 
 data = download_stock_df("AAPL")
 print(data)
 index_Close = data.columns.get_loc("close")
 np_scaled, np_scaled_c, scaler_train, scaler_pred = prepare_data(data)
-model: tf.keras.Sequential = tf.keras.models.load_model('saved_model/best_model')
+model: tf.keras.Sequential = tf.keras.models.load_model('models/model_default')
 
 model.summary()
 
@@ -35,21 +37,35 @@ print(x_test.shape, y_test.shape)
 
 y_pred_scaled = model.predict(x_test)
 # Facem unscale
+
 y_pred_unscaled = scaler_pred.inverse_transform(y_pred_scaled)
 y_test_unscaled = scaler_pred.inverse_transform(y_test).reshape(-1, output_sequence_length)
+# joblib.dump(scaler_pred, "scaler.gz")
 
 # Mean Absolute Error (MAE)
-MAE = tf.keras.metrics.mean_absolute_error(y_test_unscaled, y_pred_unscaled)
-print(f'Median Absolute Error (MAE): {np.round(MAE, 2)}')
+MAE = mean_absolute_error(y_test_unscaled, y_pred_unscaled)
+print(f'Mean Absolute Error (MAE): {np.round(MAE, 2)}')
 
+# Mean Squared Error (MSE)
+MSE = mean_squared_error(y_test_unscaled, y_pred_unscaled)
+print(f'Mean Squared Error (MSE): {np.round(MSE, 2)}')
 
-# # Mean Absolute Percentage Error (MAPE)
-# MAPE = np.mean((np.abs(np.subtract(y_test_unscaled, y_pred_unscaled) / y_test_unscaled))) * 100
-# print(f'Mean Absolute Percentage Error (MAPE): {np.round(MAPE, 2)} %')
-#
-# # Median Absolute Percentage Error (MDAPE)
-# MDAPE = np.median((np.abs(np.subtract(y_test_unscaled, y_pred_unscaled) / y_test_unscaled))) * 100
-# print(f'Median Absolute Percentage Error (MDAPE): {np.round(MDAPE, 2)} %')
+# Root Mean Squared Error (RMSE)
+RMSE = mean_squared_error(y_test_unscaled, y_pred_unscaled, squared=False)
+print(f'Root Mean Squared Error (RMSE): {np.round(RMSE, 2)}')
+
+# Mean Absolute Percentage Error (MAPE)
+MAPE = np.mean(np.abs((y_test_unscaled - y_pred_unscaled) / y_test_unscaled)) * 100
+print(f'Mean Absolute Percentage Error (MAPE): {np.round(MAPE, 2)} %')
+
+# R Squared (R^2)
+R2 = r2_score(y_test_unscaled, y_pred_unscaled)
+print(f'R Squared (R^2): {np.round(R2, 2)}')
+
+# Predictive direction accuracy
+direction_accuracy = np.mean((np.sign(y_test_unscaled[1:] - y_test_unscaled[:-1]) == np.sign(y_pred_unscaled[1:] - y_pred_unscaled[:-1])).astype(int)) * 100
+print(f'Predictive Direction Accuracy: {np.round(direction_accuracy, 2)} %')
+
 
 
 def prepare_df(i, x, y, y_pred_unscaled):
