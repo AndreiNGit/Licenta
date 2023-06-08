@@ -1,5 +1,4 @@
 import math
-import sys
 import numpy as np
 from keras_tuner import HyperParameters
 import tensorflow as tf
@@ -67,7 +66,6 @@ es = tf.keras.callbacks.EarlyStopping(monitor='val_rmse', mode='min', verbose=1,
 tuner = kt.BayesianOptimization(model_builder, objective=kt.Objective('val_rmse', direction='min'), max_trials=100,
                                 executions_per_trial=2)
 tuner.search(x=x_train, y=y_train, epochs=100, batch_size=256, validation_data=(x_test, y_test), callbacks=[es])
-tuned_model = tuner.get_best_models(2)
 best_models = tuner.get_best_models(2)
 
 # Salvam cele 2 modele optime

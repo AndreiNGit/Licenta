@@ -9,7 +9,7 @@ packages = [
     'pandas',
     'alpha_vantage',
     'matplotlib',
-    'sklearn',
+    'scikit-learn',
     'tensorflow',
     'seaborn',
     'numpy',

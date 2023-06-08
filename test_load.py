@@ -1,15 +1,9 @@
 import math
 import numpy as np
 import pandas as pd
-from alpha_vantage.timeseries import TimeSeries
 from matplotlib import pyplot as plt
-from pandas import DataFrame
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow import keras
 import tensorflow as tf
-import seaborn as sns
 from utils import download_stock_df, prepare_data, partition_dataset
-import joblib
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
