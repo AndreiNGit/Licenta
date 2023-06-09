@@ -8,7 +8,7 @@ import keras_tuner as kt
 from tensorflow import keras
 from utils import download_stock_df, prepare_data, partition_dataset
 
-stock_symbol = sys.argv[1]
+stock_symbol = "AAPL"# sys.argv[1]
 data = download_stock_df(stock_symbol)
 index_Close = data.columns.get_loc("close")
 np_scaled, np_scaled_c, scaler_train, scaler_pred = prepare_data(data)
@@ -65,14 +65,15 @@ def model_builder(hp):
 
 
 es = tf.keras.callbacks.EarlyStopping(monitor='val_rmse', mode='min', verbose=1, patience=15)
-tuner = kt.BayesianOptimization(model_builder, objective=kt.Objective('val_rmse', direction='min'), max_trials=100,
+tuner = kt.BayesianOptimization(model_builder, objective=kt.Objective('val_rmse', direction='min'), max_trials=2,
                                 executions_per_trial=2)
-tuner.search(x=x_train, y=y_train, epochs=100, batch_size=256, validation_data=(x_test, y_test), callbacks=[es])
+tuner.search(x=x_train, y=y_train, epochs=1, batch_size=256, validation_data=(x_test, y_test), callbacks=[es])
 best_models = tuner.get_best_models(2)
-
+print("Salvez modelele...")
 # Salvam cele 2 modele optime
 for i, model in enumerate(best_models):
     if i != 0:
         model.save(f"models/model_{stock_symbol.lower()}{i}")
     else:
         model.save(f"models/model_{stock_symbol.lower()}")
+print("Modelele au fost salvate!")
