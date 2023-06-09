@@ -8,7 +8,7 @@ import keras_tuner as kt
 from tensorflow import keras
 from utils import download_stock_df, prepare_data, partition_dataset
 
-stock_symbol = "AAPL"# sys.argv[1]
+stock_symbol = sys.argv[1]
 data = download_stock_df(stock_symbol)
 index_Close = data.columns.get_loc("close")
 np_scaled, np_scaled_c, scaler_train, scaler_pred = prepare_data(data)
